@@ -1,18 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Sparkles,
-  Target,
-  MousePointer,
-  FileDown,
-  Award,
-  ArrowRight,
-  Calculator,
-  Languages,
-  BookOpen,
-  LogIn,
-} from "lucide-react"
+import { Target, MousePointer, FileDown, Award, ArrowRight, Calculator, Languages, BookOpen } from "lucide-react"
 import Link from "next/link"
+import Header from "@/components/header"
 
 export default function HomePage() {
   return (
@@ -24,57 +14,21 @@ export default function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 text-white">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
-            AI 문제지 생성기
-          </span>
-        </div>
-        <div className="flex items-center gap-8">
-          <Link href="/" className="hover:text-purple-200 transition-all duration-300 font-medium relative group">
-            홈
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link href="/create" className="hover:text-purple-200 transition-all duration-300 font-medium relative group">
-            문제지 만들기
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link
-            href="/history"
-            className="hover:text-purple-200 transition-all duration-300 font-medium relative group"
-          >
-            생성 기록
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link href="/login">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="bg-white text-purple-700 hover:bg-gray-100 border-none font-medium"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              로그인
-            </Button>
-          </Link>
-        </div>
-      </nav>
+      {/* Header */}
+      <Header />
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Left Content */}
-          <div className="text-white space-y-8">
-            <div className="space-y-6">
+          <div className="text-white space-y-6 max-w-xl">
+            <div className="space-y-4">
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 AI 기반 맞춤형 학습
               </div>
 
-              <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+              <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
                 <span className="bg-gradient-to-r from-white via-purple-100 to-white bg-clip-text text-transparent">
                   AI의 창의적인
                 </span>
@@ -84,12 +38,10 @@ export default function HomePage() {
                 </span>
               </h1>
 
-              <p className="text-xl text-purple-100 leading-relaxed max-w-lg">
-                초등학생을 위한 맞춤형 문제지 생성 서비스
-              </p>
+              <p className="text-xl text-purple-100 leading-relaxed">초등학생을 위한 맞춤형 문제지 생성 서비스</p>
             </div>
 
-            <p className="text-lg text-purple-100 leading-relaxed max-w-lg">
+            <p className="text-lg text-purple-100 leading-relaxed">
               인공지능이 학년별, 과목별로 최적화된 문제를 생성합니다. PDF와 Word 형식으로 다운받아 언제든 학습하세요!
             </p>
 
@@ -114,7 +66,7 @@ export default function HomePage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8">
+            <div className="grid grid-cols-3 gap-6 pt-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-white">1,000+</div>
                 <div className="text-purple-200 text-sm">생성된 문제지</div>
@@ -131,8 +83,8 @@ export default function HomePage() {
           </div>
 
           {/* Right Content - Test Paper Form */}
-          <div className="flex justify-center lg:justify-end">
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl border-0 max-w-md w-full">
+          <div className="w-full max-w-md">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl border-0 w-full">
               <CardContent className="p-6">
                 <div className="space-y-5">
                   <div className="text-center mb-2">
@@ -209,7 +161,7 @@ export default function HomePage() {
         </div>
 
         {/* Features Section */}
-        <div className="mt-20">
+        <div className="mt-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">왜 AI 문제지 생성기를 선택해야 할까요?</h2>
             <p className="text-purple-100 text-lg">혁신적인 AI 기술로 더 나은 학습 경험을 제공합니다</p>

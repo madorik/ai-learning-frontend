@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, Download, FileText, Clock, Filter, Search, LogIn } from "lucide-react"
+import { Calendar, Download, FileText, Clock, Filter, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import Link from "next/link"
+import Header from "@/components/header"
 
 // 샘플 데이터
 const testPaperHistory = [
@@ -126,36 +126,8 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-semibold text-gray-800">AI 문제지 생성기</span>
-            </div>
-            <div className="flex items-center gap-8">
-              <Link href="/" className="text-gray-600 hover:text-purple-600 transition-colors">
-                홈
-              </Link>
-              <Link href="/create" className="text-gray-600 hover:text-purple-600 transition-colors">
-                문제지 만들기
-              </Link>
-              <Link href="/history" className="text-purple-600 font-medium">
-                생성 기록
-              </Link>
-              <Link href="/login">
-                <Button variant="outline" size="sm" className="border-gray-200 text-gray-700 hover:bg-gray-50">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  로그인
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Header */}
+      <Header />
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, BookOpen, Wand2, Calculator, Languages, ArrowLeft, LogIn, Loader2, Download } from "lucide-react"
+import { FileText, BookOpen, Wand2, Calculator, Languages, Loader2, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import Link from "next/link"
+import Header from "@/components/header"
 
 export default function CreateTestPaperPage() {
   const [activeGrade, setActiveGrade] = useState("3")
@@ -324,38 +324,8 @@ export default function CreateTestPaperPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-semibold text-gray-800">AI 문제지 생성기</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-8">
-              <Link href="/" className="text-gray-600 hover:text-purple-600 transition-colors">
-                홈
-              </Link>
-              <Link href="/create" className="text-purple-600 font-medium">
-                문제지 만들기
-              </Link>
-              <Link href="/history" className="text-gray-600 hover:text-purple-600 transition-colors">
-                생성 기록
-              </Link>
-              <Link href="/login">
-                <Button variant="outline" size="sm" className="border-gray-200 text-gray-700 hover:bg-gray-50">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  로그인
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Header */}
+      <Header />
 
       <div className="container mx-auto px-6 py-8">
         <div className="mb-8">

@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Sparkles, CheckCircle, AlertCircle } from 'lucide-react'
 
-export default function AuthSuccessPage() {
+// AuthSuccess 컴포넌트를 별도로 분리하여 Suspense로 감싸기
+function AuthSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -152,5 +153,46 @@ export default function AuthSuccessPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+// 로딩 컴포넌트
+function AuthSuccessLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">AI 문제지 생성기</h1>
+        </div>
+
+        <Card className="w-full bg-white/95 backdrop-blur-lg shadow-xl border-0">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <div className="w-8 h-8 border-2 border-t-transparent border-blue-500 rounded-full animate-spin" />
+            </div>
+            <CardTitle className="text-xl font-bold text-gray-800">
+              페이지 로딩 중...
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-gray-600 mb-4">잠시만 기다려 주세요.</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// 메인 페이지 컴포넌트
+export default function AuthSuccessPage() {
+  return (
+    <Suspense fallback={<AuthSuccessLoading />}>
+      <AuthSuccessContent />
+    </Suspense>
   )
 } 

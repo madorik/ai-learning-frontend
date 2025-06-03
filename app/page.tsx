@@ -18,7 +18,7 @@ export default function HomePage() {
       <Header />
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-6 py-8">
+      <div className="relative z-40 container mx-auto px-6 py-8">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Left Content */}
           <div className="text-white space-y-6 max-w-xl">

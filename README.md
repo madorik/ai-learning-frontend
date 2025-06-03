@@ -1,187 +1,156 @@
-# AI 초등 수학 문제지 생성기
+# AI 문제지 생성기 (프론트엔드)
 
-AI를 활용하여 초등학생을 위한 맞춤형 수학 문제지를 생성하는 웹 애플리케이션입니다.
+Next.js 15 + React 19 + Tailwind CSS로 구축된 AI 문제지 생성 서비스의 프론트엔드입니다.
 
-## 🎯 주요 기능
+## 🚀 주요 기능
 
-- **맞춤형 문제 생성**: 학년별, 과목별 최적화된 문제 자동 생성
-- **다양한 과목 지원**: 수학, 국어, 영어 
-- **문제 유형 선택**: 교과과정 기반, 수행평가, 모의고사
-- **문제 수 설정**: 10개, 20개, 30개 중 선택
-- **해설 포함 옵션**: 선택적으로 자세한 해설 제공
-- **다양한 다운로드 형식**: PDF, Word 형식 지원
-- **직관적인 UI/UX**: 학부모와 선생님이 쉽게 사용할 수 있는 모던한 인터페이스
-- **생성 기록 관리**: 과거 생성된 문제지 히스토리 관리
-- **로그인 시스템**: 개인화된 서비스 제공
+- **백엔드 연동 로그인**: 기존 백엔드 서버(3000 포트)의 Google OAuth 인증 시스템
+- **반응형 UI**: Tailwind CSS와 shadcn/ui 컴포넌트 기반 모던 인터페이스
+- **TypeScript**: 안전한 타입 시스템으로 개발
 
-## 🛠 기술 스택
+## 🛠️ 기술 스택
 
-### Frontend & Backend (Full-Stack)
-- **Next.js 15.2.4**: React 기반 풀스택 프레임워크
-- **React 19**: 최신 React 버전
-- **TypeScript**: 타입 안전성
-- **Tailwind CSS**: 유틸리티 퍼스트 CSS 프레임워크
-- **Radix UI**: 접근성을 고려한 UI 컴포넌트 라이브러리
+- **프레임워크**: Next.js 15 (App Router)
+- **언어**: TypeScript 5
+- **스타일링**: Tailwind CSS 3
+- **UI 컴포넌트**: shadcn/ui (Radix UI 기반)
+- **아이콘**: Lucide React
+- **패키지 매니저**: pnpm
 
-### UI/UX 라이브러리
-- **Lucide React**: 아이콘 라이브러리
-- **React Hook Form**: 폼 상태 관리
-- **Zod**: 스키마 검증
-- **Sonner**: 토스트 알림
-- **Date-fns**: 날짜 처리
-- **Recharts**: 차트 라이브러리
+## 📦 설치 및 실행
 
-### 기타 도구
-- **PNPM**: 패키지 매니저
-- **ESLint**: 코드 품질 검사
-- **PostCSS**: CSS 후처리
+### 1. 의존성 설치
+```bash
+pnpm install
+```
+
+### 2. 환경 변수 설정
+`.env.local` 파일을 생성하고 다음 내용을 추가하세요:
+
+```env
+# 백엔드 API 서버 URL
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### 3. 개발 서버 실행
+```bash
+pnpm dev
+```
+
+프론트엔드는 http://localhost:9090 에서 실행됩니다.
+
+## 🔗 백엔드 연동
+
+이 프론트엔드는 별도의 백엔드 서버와 연동됩니다:
+
+- **백엔드 서버**: http://localhost:3000
+- **인증 방식**: 백엔드 서버의 Google OAuth 리디렉션
+- **API 통신**: Bearer Token 기반 인증
+
+### 로그인 플로우
+
+1. 사용자가 "구글로 로그인" 버튼 클릭
+2. 백엔드 `/auth/google` 엔드포인트로 리디렉션
+3. Google OAuth 인증 완료 후 백엔드에서 토큰 발급
+4. 토큰과 사용자 정보가 URL 파라미터로 프론트엔드에 전달
+5. 프론트엔드에서 토큰을 localStorage에 저장
+
+### API 호출 예시
+
+```typescript
+// 인증이 필요한 API 호출
+const token = localStorage.getItem('access_token');
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/me`, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+```
 
 ## 📁 프로젝트 구조
 
 ```
-ai-learning/
-├── app/                   # Next.js App Router
-│   ├── create/           # 문제지 생성 페이지
-│   ├── history/          # 생성 기록 페이지
-│   ├── login/            # 로그인 페이지
-│   ├── layout.tsx        # 루트 레이아웃
+├── app/                    # Next.js 15 App Router
+│   ├── globals.css        # 글로벌 스타일
+│   ├── layout.tsx         # 루트 레이아웃
 │   ├── page.tsx          # 홈페이지
-│   └── globals.css       # 글로벌 스타일
-├── components/           # 재사용 가능한 컴포넌트
-│   └── ui/              # UI 컴포넌트 라이브러리
-├── lib/                 # 유틸리티 함수
-├── hooks/               # 커스텀 React 훅
-├── styles/              # 스타일 파일
-├── public/              # 정적 파일
-├── package.json         # 프로젝트 의존성
-├── tailwind.config.ts   # Tailwind CSS 설정
-├── tsconfig.json        # TypeScript 설정
-└── next.config.mjs      # Next.js 설정
+│   └── login/            # 로그인 페이지
+│       └── page.tsx
+├── components/            # React 컴포넌트
+│   ├── simple-login.tsx  # 백엔드 연동 로그인
+│   └── ui/               # shadcn/ui 컴포넌트
+├── lib/                  # 유틸리티 함수
+│   └── utils.ts
+└── public/               # 정적 파일
 ```
 
-## 🚀 설치 및 실행
+## 🎨 코딩 스타일 가이드
 
-### 1. 프로젝트 클론
+- **들여쓰기**: 2칸 스페이스
+- **변수명**: camelCase
+- **상수명**: SNAKE_CASE
+- **파일명**: kebab-case
+- **주석**: 한글, 필요한 부분만 최소한으로
+
+## 🔧 환경 설정
+
+### 포트 설정
+- **프론트엔드**: 9090
+- **백엔드**: 3000
+
+### 개발 도구
+- **ESLint**: 코드 품질 검사
+- **TypeScript**: 타입 안전성
+- **Tailwind CSS**: 스타일링
+
+## 📝 주요 컴포넌트
+
+### SimpleLogin
+백엔드 서버와 연동되는 로그인 컴포넌트
+
+```tsx
+<SimpleLogin 
+  onLoginSuccess={(user) => console.log('로그인 성공:', user)}
+  onLoginError={(error) => console.error('로그인 오류:', error)}
+/>
+```
+
+**기능:**
+- 백엔드 Google OAuth 리디렉션
+- 로그인 콜백 처리
+- 토큰 관리 (localStorage)
+- 로그아웃 처리
+- API 호출 테스트
+
+## 🚀 배포
+
+### 빌드
 ```bash
-git clone <repository-url>
-cd ai-learning
-```
-
-### 2. 패키지 설치
-```bash
-# PNPM 사용 (권장)
-pnpm install
-
-# 또는 NPM 사용
-npm install
-```
-
-### 3. 환경변수 설정
-`.env.local` 파일을 생성하고 다음 내용을 추가:
-```env
-# AI API 설정
-NEXT_PUBLIC_AI_API_KEY=your_ai_api_key_here
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-
-# 기타 설정
-NODE_ENV=development
-```
-
-### 4. 개발 서버 실행
-```bash
-# 개발 모드
-pnpm dev
-
-# 또는
-npm run dev
-```
-
-서버가 실행되면 `http://localhost:3000`에서 애플리케이션을 확인할 수 있습니다.
-
-### 5. 빌드 및 배포
-```bash
-# 프로덕션 빌드
 pnpm build
+```
 
-# 프로덕션 서버 실행
+### 프로덕션 실행
+```bash
 pnpm start
 ```
 
-## 📖 사용 방법
+### 환경 변수 (프로덕션)
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-domain.com
+```
 
-1. **홈페이지 접속**: `http://localhost:3000`에서 서비스 소개 확인
-2. **문제지 생성**: "문제지 만들기" 버튼 클릭 또는 `/create` 페이지로 이동
-   - 과목 선택 (수학/국어/영어)
-   - 학년 선택 (1-6학년)
-   - 문제 유형 선택 (교과과정 기반/수행평가/모의고사)
-   - 문제 개수 설정 (10개/20개/30개)
-   - 해설 포함 여부 선택
-3. **문제 생성**: "문제지 생성" 버튼 클릭
-4. **미리보기**: 생성된 문제 확인
-5. **다운로드**: PDF 또는 Word 형식으로 다운로드
-6. **기록 확인**: `/history` 페이지에서 과거 생성 기록 확인
+## 🤝 백엔드 협업
 
-## 🎨 코딩 컨벤션
+이 프론트엔드는 다음 백엔드 API와 연동됩니다:
 
-- **들여쓰기**: 2칸 스페이스
-- **변수/함수명**: camelCase
-- **상수**: SNAKE_CASE  
-- **파일명**: kebab-case
-- **enum 클래스 변수**: snake_case
-- **주석**: 한글로 작성, 필요한 부분에만 최소한으로 작성 (why 중심)
+- `GET /auth/google` - Google OAuth 로그인 시작
+- `POST /auth/logout` - 로그아웃
+- `GET /api/user/me` - 사용자 정보 조회
+- 기타 AI 문제지 생성 관련 API
 
-## 🔧 주요 기능
+백엔드 서버가 3000번 포트에서 실행 중이어야 합니다.
 
-### 메인 페이지
-- 서비스 소개 및 주요 기능 안내
-- 실시간 통계 (생성된 문제지, 만족한 사용자, 만족도)
-- 빠른 문제지 생성 폼
+## 📄 라이선스
 
-### 문제지 생성 페이지 (`/create`)
-- 상세한 설정 옵션
-- 실시간 미리보기
-- 다중 형식 다운로드
-
-### 생성 기록 페이지 (`/history`)
-- 과거 생성한 문제지 목록
-- 재다운로드 기능
-- 검색 및 필터링
-
-### 로그인 시스템 (`/login`)
-- 사용자 인증
-- 개인화된 서비스 제공
-
-## 💡 향후 계획
-
-- [ ] AI 모델 통합 및 실제 문제 생성 API 개발
-- [ ] 사용자 계정 시스템 구축
-- [ ] 실시간 문제지 생성 기능
-- [ ] 개인 맞춤형 학습 분석 기능
-- [ ] 모바일 앱 개발
-- [ ] 다양한 과목 확장 (과학, 사회 등)
-- [ ] 협업 기능 (선생님-학생 연결)
-
-## 🤝 기여하기
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### PR 규칙
-- description에 해결한 문제, 변경 사항, 테스트 내용 포함
-- 코딩 컨벤션 준수
-- API 변경 시 문서 업데이트
-
-## 🐛 버그 리포트 및 기능 요청
-
-버그 리포트나 새로운 기능 요청은 [Issues](https://github.com/your-username/ai-learning/issues)를 통해 등록해 주세요.
-
-## 📝 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-## 📞 문의
-
-프로젝트 관련 문의나 버그 리포트는 Issues를 통해 연락주세요. 
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 

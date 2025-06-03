@@ -611,7 +611,7 @@ export default function CreateTestPaperPage() {
 
       {/* 알림 모달 */}
       <Dialog open={alertModal.open} onOpenChange={closeAlert}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md mx-4">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               {getAlertIcon()}
@@ -640,22 +640,22 @@ export default function CreateTestPaperPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">문제지 만들기</h1>
-          <p className="text-gray-600">원하는 조건을 설정하고 맞춤형 문제지를 생성해보세요.</p>
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">문제지 만들기</h1>
+          <p className="text-gray-600 text-sm sm:text-base">원하는 조건을 설정하고 맞춤형 문제지를 생성해보세요.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-6">
           <Card className="border-none shadow-md">
             <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg font-medium">문제지 설정</CardTitle>
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardTitle className="text-base sm:text-lg font-medium">문제지 설정</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-6">
+            <CardContent className="pt-4 p-4 sm:p-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* 과목 */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium">과목</h3>
@@ -664,10 +664,12 @@ export default function CreateTestPaperPage() {
                       <Button
                         key={subject.id}
                         variant={activeSubject === subject.id ? "default" : "outline"}
-                        className={cn("flex-1 gap-2", activeSubject === subject.id ? "" : "text-muted-foreground")}
+                        className={cn("flex-1 gap-1 sm:gap-2 text-xs sm:text-sm", activeSubject === subject.id ? "" : "text-muted-foreground")}
                         onClick={() => setActiveSubject(subject.id)}
                       >
-                        {subject.icon}
+                        <div className="w-4 h-4 sm:w-5 sm:h-5">
+                          {subject.icon}
+                        </div>
                         {subject.name}
                       </Button>
                     ))}
@@ -677,12 +679,12 @@ export default function CreateTestPaperPage() {
                 {/* 학년 */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium">학년</h3>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
                     {grades.map((grade) => (
                       <Button
                         key={grade}
                         variant={activeGrade === grade ? "default" : "outline"}
-                        className={cn("flex-1 min-w-[60px]", activeGrade === grade ? "" : "text-muted-foreground")}
+                        className={cn("flex-1 min-w-[60px] text-xs sm:text-sm", activeGrade === grade ? "" : "text-muted-foreground")}
                         onClick={() => setActiveGrade(grade)}
                       >
                         {grade}학년
@@ -712,12 +714,12 @@ export default function CreateTestPaperPage() {
                 {/* 문제 수 */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium">문제 수</h3>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 sm:flex gap-2">
                     {questionCounts.map((count) => (
                       <Button
                         key={count}
                         variant={activeQuestionCount === count ? "default" : "outline"}
-                        className={cn("flex-1", activeQuestionCount === count ? "" : "text-muted-foreground")}
+                        className={cn("flex-1 text-xs sm:text-sm", activeQuestionCount === count ? "" : "text-muted-foreground")}
                         onClick={() => setActiveQuestionCount(count)}
                       >
                         {count}개
@@ -735,7 +737,7 @@ export default function CreateTestPaperPage() {
                         key={difficulty.id}
                         variant={activeDifficulty === difficulty.id ? "default" : "outline"}
                         className={cn(
-                          "flex-1",
+                          "flex-1 text-xs sm:text-sm",
                           activeDifficulty === difficulty.id ? (
                             difficulty.id === "easy" ? "bg-green-500 hover:bg-green-600 text-white" :
                             difficulty.id === "normal" ? "bg-yellow-500 hover:bg-yellow-600 text-white" :
@@ -770,9 +772,9 @@ export default function CreateTestPaperPage() {
                 </div>
 
                 {/* 문제지 생성 버튼 */}
-                <div className="pt-2 flex gap-2">
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
                   <Button
-                    className="flex-1 gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                    className="flex-1 gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-sm sm:text-base py-2 sm:py-3"
                     onClick={handleGenerateTestPaper}
                     disabled={isGenerating}
                   >
@@ -792,7 +794,7 @@ export default function CreateTestPaperPage() {
                     <Button
                       variant="outline"
                       onClick={stopStreaming}
-                      className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                      className="gap-2 text-red-600 border-red-200 hover:bg-red-50 text-sm sm:text-base py-2 sm:py-3"
                     >
                       <StopCircle className="h-4 w-4" />
                       중단
@@ -810,48 +812,48 @@ export default function CreateTestPaperPage() {
               <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-green-600" />
-                    <CardTitle className="text-lg font-medium">Preview</CardTitle>
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    <CardTitle className="text-base sm:text-lg font-medium">Preview</CardTitle>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownload("pdf")}
                       disabled={!isGenerated}
-                      className="text-xs"
+                      className="text-xs px-2 sm:px-3"
                     >
-                      <Download className="h-3 w-3 mr-1" />
-                      PDF
+                      <Download className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">PDF</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownload("word")}
                       disabled={!isGenerated}
-                      className="text-xs"
+                      className="text-xs px-2 sm:px-3"
                     >
-                      <Download className="h-3 w-3 mr-1" />
-                      WORD
+                      <Download className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">WORD</span>
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 h-[600px] overflow-auto">
+              <CardContent className="p-0 h-[400px] sm:h-[600px] overflow-auto mobile-scroll">
                 {previewContent ? (
-                  <div className="preview-content" dangerouslySetInnerHTML={{ __html: previewContent }} />
+                  <div className="preview-content p-4" dangerouslySetInnerHTML={{ __html: previewContent }} />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <FileText className="h-8 w-8 text-gray-400" />
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4 sm:p-6 mobile-text">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-700 mb-2">미리보기 영역</h3>
-                    <p className="text-gray-500 max-w-md mb-4">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-700 mb-2">미리보기 영역</h3>
+                    <p className="text-gray-500 max-w-md mb-4 text-sm sm:text-base">
                       왼쪽에서 원하는 설정을 선택한 후 '문제지 생성' 버튼을 클릭하면 AI가 실시간으로 문제를 생성하는
                       과정이 여기에 표시됩니다.
                     </p>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md">
-                      <p className="text-sm text-blue-700">
+                      <p className="text-xs sm:text-sm text-blue-700">
                         💡 문제지 생성 완료 후 PDF 또는 WORD 형식으로 다운로드할 수 있습니다.
                       </p>
                     </div>

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, Download, FileText, Clock, Filter, Search } from "lucide-react"
+import { Calendar, Download, FileText, Clock, Filter, Search, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Header from "@/components/header"
 
 // 샘플 데이터
@@ -119,6 +120,7 @@ export default function HistoryPage() {
   }
 
   const handleDownload = (id: number, format: "pdf" | "word") => {
+    // 다운로드 로직
   }
 
   return (
@@ -126,83 +128,83 @@ export default function HistoryPage() {
       {/* Header */}
       <Header />
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">생성 기록</h1>
-          <p className="text-gray-600">지금까지 생성한 문제지를 확인하고 다운로드하세요.</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">생성 기록</h1>
+          <p className="text-gray-600 text-sm sm:text-base">지금까지 생성한 문제지를 확인하고 다운로드하세요.</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <Card className="mobile-card">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">총 생성 문제지</p>
-                  <p className="text-2xl font-bold text-gray-900">{testPaperHistory.length}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">총 생성 문제지</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{testPaperHistory.length}</p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-600" />
+                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card className="mobile-card">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">이번 주 생성</p>
-                  <p className="text-2xl font-bold text-gray-900">3</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">이번 주 생성</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">3</p>
                 </div>
-                <Calendar className="h-8 w-8 text-green-600" />
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card className="mobile-card">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">총 문제 수</p>
-                  <p className="text-2xl font-bold text-gray-900">132</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">총 문제 수</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">132</p>
                 </div>
-                <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600 font-bold">Q</span>
+                <div className="h-6 w-6 sm:h-8 sm:w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-purple-600 font-bold text-sm sm:text-base">Q</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card className="mobile-card">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">평균 소요 시간</p>
-                  <p className="text-2xl font-bold text-gray-900">2분</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">평균 소요 시간</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">2분</p>
                 </div>
-                <Clock className="h-8 w-8 text-orange-600" />
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+        <Card className="mb-6 mobile-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
               필터 및 검색
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="문제지 제목 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
 
@@ -233,61 +235,70 @@ export default function HistoryPage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" className="w-full">
-                필터 초기화
+              <Button variant="outline" onClick={() => {
+                setSearchTerm("")
+                setSelectedSubject("all")
+                setSelectedGrade("all")
+              }} className="text-sm">
+                초기화
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* History Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>문제지 생성 기록</CardTitle>
+        {/* Results */}
+        <Card className="mobile-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">
+              문제지 목록 ({filteredHistory.length}개)
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>문제지 제목</TableHead>
-                  <TableHead>과목</TableHead>
-                  <TableHead>학년</TableHead>
-                  <TableHead>문제 수</TableHead>
-                  <TableHead>난이도</TableHead>
-                  <TableHead>생성 일시</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead>다운로드</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHistory.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>
-                      <Badge className={getSubjectColor(item.subject)}>{item.subject}</Badge>
-                    </TableCell>
-                    <TableCell>{item.grade}</TableCell>
-                    <TableCell>{item.questionCount}개</TableCell>
-                    <TableCell>
-                      <Badge className={getDifficultyColor(item.difficulty)}>{item.difficulty}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{item.createdAt}</div>
-                        <div className="text-gray-500">{item.time}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.status === "완료" ? "default" : "secondary"}>{item.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {item.status === "완료" ? (
+          <CardContent className="p-0">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>제목</TableHead>
+                    <TableHead>과목</TableHead>
+                    <TableHead>학년</TableHead>
+                    <TableHead>문제 수</TableHead>
+                    <TableHead>난이도</TableHead>
+                    <TableHead>생성일</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>다운로드</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredHistory.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.title}</TableCell>
+                      <TableCell>
+                        <Badge className={getSubjectColor(item.subject)}>{item.subject}</Badge>
+                      </TableCell>
+                      <TableCell>{item.grade}</TableCell>
+                      <TableCell>{item.questionCount}개</TableCell>
+                      <TableCell>
+                        <Badge className={getDifficultyColor(item.difficulty)}>{item.difficulty}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{item.createdAt}</div>
+                          <div className="text-gray-500">{item.time}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={item.status === "완료" ? "default" : "secondary"}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownload(item.id, "pdf")}
-                            className="text-xs"
+                            disabled={item.status !== "완료"}
                           >
                             <Download className="h-3 w-3 mr-1" />
                             PDF
@@ -296,26 +307,77 @@ export default function HistoryPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownload(item.id, "word")}
-                            className="text-xs"
+                            disabled={item.status !== "완료"}
                           >
                             <Download className="h-3 w-3 mr-1" />
-                            WORD
+                            Word
                           </Button>
                         </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">생성중...</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-3 p-4">
+              {filteredHistory.map((item) => (
+                <Card key={item.id} className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm truncate pr-2">{item.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={`${getSubjectColor(item.subject)} text-xs`}>{item.subject}</Badge>
+                          <Badge className={`${getDifficultyColor(item.difficulty)} text-xs`}>{item.difficulty}</Badge>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleDownload(item.id, "pdf")}
+                            disabled={item.status !== "완료"}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            PDF 다운로드
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDownload(item.id, "word")}
+                            disabled={item.status !== "완료"}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Word 다운로드
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                      <div>학년: {item.grade}</div>
+                      <div>문제 수: {item.questionCount}개</div>
+                      <div>생성일: {item.createdAt}</div>
+                      <div>
+                        상태: <Badge variant={item.status === "완료" ? "default" : "secondary"} className="text-xs">
+                          {item.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             {filteredHistory.length === 0 && (
               <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">검색 결과가 없습니다</h3>
-                <p className="text-gray-500">다른 검색 조건을 시도해보세요.</p>
+                <p className="text-gray-500">다른 조건으로 검색해보세요.</p>
               </div>
             )}
           </CardContent>

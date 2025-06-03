@@ -8,11 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const authorization = request.headers.get('Authorization');
     
-    console.log('=== /auth/profile 요청 받음 ===');
-    console.log('Authorization 헤더:', authorization);
-    
     if (!authorization || !authorization.startsWith('Bearer ')) {
-      console.log('Bearer 토큰이 없음');
       return NextResponse.json(
         { error: 'Bearer 토큰이 필요합니다.' },
         { status: 401 }
@@ -23,9 +19,6 @@ export async function GET(request: NextRequest) {
     const backendURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     const targetURL = `${backendURL}/auth/profile`;
     
-    console.log('백엔드 요청 URL:', targetURL);
-    console.log('요청 헤더:', { Authorization: authorization });
-    
     const response = await fetch(targetURL, {
       method: 'GET',
       headers: {
@@ -34,12 +27,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('백엔드 응답 상태:', response.status);
-    console.log('백엔드 응답 헤더:', Object.fromEntries(response.headers.entries()));
-
     if (response.ok) {
       const userData = await response.json();
-      console.log('백엔드에서 받은 사용자 데이터:', userData);
       return NextResponse.json(userData);
     } else {
       const errorText = await response.text();

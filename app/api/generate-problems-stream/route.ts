@@ -5,8 +5,6 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const backendUrl = `${backendURL}/api/generate-problems-stream?${searchParams.toString()}`
   
-  console.log('SSE 프록시 요청:', backendUrl)
-
   try {
     const response = await fetch(backendUrl, {
       method: 'GET',

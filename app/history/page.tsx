@@ -119,9 +119,6 @@ export default function HistoryPage() {
   }
 
   const handleDownload = (id: number, format: "pdf" | "word") => {
-    // 실제 다운로드 로직 구현
-    console.log(`Downloading ${format} for test paper ${id}`)
-    // 여기에 실제 다운로드 API 호출 로직 추가
   }
 
   return (

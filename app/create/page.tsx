@@ -434,8 +434,6 @@ export default function CreateTestPaperPage() {
       includeExplanation: includeExplanation
     }
 
-    console.log('문제지 생성 요청:', formData)
-
     // 쿼리 스트링 생성
     const queryParams = new URLSearchParams(formData).toString()
     const url = `${window.location.origin}/api/generate-problems-stream?${queryParams}`

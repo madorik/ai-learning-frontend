@@ -43,32 +43,22 @@ export default function Header() {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('access_token');
     
-    console.log('=== 헤더에서 로그인 상태 확인 ===');
-    console.log('저장된 사용자 정보:', savedUser);
-    console.log('저장된 토큰:', savedToken ? '존재함' : '없음');
-    
     if (savedUser && savedToken) {
       try {
         let userData = JSON.parse(savedUser);
         
         // wrapper 객체인지 확인 (success, user, message 필드가 있는 경우)
         if (userData.success && userData.user) {
-          console.log('wrapper 객체 감지, user 부분만 추출');
           userData = userData.user;
           // localStorage를 올바른 형태로 다시 저장
           localStorage.setItem('user', JSON.stringify(userData));
         }
-        
-        console.log('파싱된 사용자 데이터:', userData);
-        console.log('사용자 이름:', userData.name);
-        console.log('프로필 이미지 URL:', userData.profileImage);
         
         // 기존 사용자와 다른 경우에만 업데이트 (JSON 문자열로 비교하여 정확한 비교)
         const currentUserJson = JSON.stringify(user);
         const newUserJson = JSON.stringify(userData);
         
         if (currentUserJson !== newUserJson) {
-          console.log('사용자 상태 업데이트:', userData);
           setUser(userData);
           setImageLoadError(false); // 사용자 변경 시 이미지 에러 상태 초기화
         }
@@ -81,14 +71,12 @@ export default function Header() {
     } else {
       // 토큰이나 사용자 정보가 없으면 로그아웃 상태
       if (user) {
-        console.log('로그아웃 상태로 변경');
         setUser(null);
       }
     }
   };
 
   const handleLoginClick = () => {
-    console.log('로그인 버튼 클릭됨!');
     router.push('/login');
   };
 
@@ -117,8 +105,6 @@ export default function Header() {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       setUser(null);
-      console.log('로그아웃 완료');
-      
       // 홈페이지로 리디렉션
       router.push('/');
     }
@@ -146,15 +132,8 @@ export default function Header() {
 
   // 이미지 로드 성공 핸들러
   const handleImageLoad = () => {
-    console.log('프로필 이미지 로드 성공:', user?.profileImage);
     setImageLoadError(false);
   };
-
-  console.log('=== 헤더 렌더링 ===');
-  console.log('현재 user 상태:', user);
-  console.log('user.name:', user?.name);
-  console.log('user.profileImage:', user?.profileImage);
-  console.log('imageLoadError:', imageLoadError);
 
   return (
     <header className="bg-gradient-to-r from-purple-500 to-indigo-700 shadow-md sticky top-0 z-50">

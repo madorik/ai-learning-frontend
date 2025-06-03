@@ -21,7 +21,6 @@ function AuthSuccessContent() {
           throw new Error('토큰이 없습니다.')
         }
 
-        console.log('=== 로그인 성공 처리 시작 ===');
         console.log('받은 토큰:', token);
 
         // 토큰을 localStorage에 저장
@@ -29,16 +28,12 @@ function AuthSuccessContent() {
 
         // Bearer 토큰으로 사용자 정보 가져오기
         const currentOrigin = window.location.origin // http://localhost:9090
-        console.log('프로필 API 요청:', `${currentOrigin}/auth/profile`);
-        
         const response = await fetch(`${currentOrigin}/auth/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
-
-        console.log('프로필 API 응답 상태:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -47,24 +42,13 @@ function AuthSuccessContent() {
         }
 
         const responseData = await response.json()
-        console.log('=== 백엔드에서 받은 원본 응답 데이터 ===');
-        console.log('전체 응답:', responseData);
-        console.log('success 필드:', responseData.success);
-        console.log('user 필드:', responseData.user);
-        console.log('message 필드:', responseData.message);
 
         // 실제 사용자 정보는 responseData.user 안에 있음
         const userData = responseData.user;
-        console.log('=== 추출된 사용자 데이터 ===');
-        console.log('사용자 정보:', userData);
-        console.log('이름:', userData.name);
-        console.log('이메일:', userData.email);
-        console.log('프로필 이미지:', userData.profileImage);
-        console.log('ID:', userData.id);
+
 
         // 사용자 정보만 localStorage에 저장 (wrapper 객체가 아닌 실제 user 데이터만)
         localStorage.setItem('user', JSON.stringify(userData))
-        console.log('localStorage에 저장된 사용자 정보:', JSON.stringify(userData));
 
         // 헤더에 사용자 정보 업데이트 알림
         window.dispatchEvent(new Event('userUpdated'));

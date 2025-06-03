@@ -98,7 +98,6 @@ export default function SimpleLogin({
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       setUser(null);
-      console.log('로그아웃 완료');
     }
   };
 

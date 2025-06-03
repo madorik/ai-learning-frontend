@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
+  const backendURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const searchParams = request.nextUrl.searchParams
-  const backendUrl = `http://localhost:3000/api/generate-problems-stream?${searchParams.toString()}`
+  const backendUrl = `${backendURL}/api/generate-problems-stream?${searchParams.toString()}`
   
   console.log('SSE 프록시 요청:', backendUrl)
 

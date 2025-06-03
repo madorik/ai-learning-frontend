@@ -8,7 +8,6 @@ import SimpleLogin from "@/components/simple-login"
 export default function LoginPage() {
   // 로그인 성공 처리
   const handleLoginSuccess = (user: any) => {
-    console.log('로그인 성공:', user);
     // 홈페이지로 리디렉션
     window.location.href = '/';
   };

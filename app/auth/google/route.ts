@@ -10,8 +10,6 @@ export async function GET(request: NextRequest) {
     const backendURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     const redirectURL = `${backendURL}/auth/google`;
     
-    console.log('Google OAuth 로그인 시작 - 백엔드로 리디렉션:', redirectURL);
-    
     // 백엔드의 Google OAuth 엔드포인트로 리디렉션
     return NextResponse.redirect(redirectURL);
     

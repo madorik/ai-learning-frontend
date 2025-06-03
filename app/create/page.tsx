@@ -115,7 +115,10 @@ export default function CreateTestPaperPage() {
     }
     
     setIsGenerating(false)
-    addStatusMessage('stop', '스트리밍이 중단되었습니다.')
+    // 사용자가 직접 중단한 경우에만 메시지 표시
+    if (isGenerating) {
+      addStatusMessage('stop', '사용자에 의해 중단되었습니다.')
+    }
   }
 
   // 스트림 데이터 처리
@@ -166,6 +169,11 @@ export default function CreateTestPaperPage() {
         }
         setIsGenerating(false)
         setIsGenerated(true)
+        // 완료 후 연결 종료하여 재연결 방지
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close()
+          eventSourceRef.current = null
+        }
         break
         
       case 'error':
@@ -282,12 +290,11 @@ export default function CreateTestPaperPage() {
           <div class="space-y-2 mb-4">
             <strong class="text-gray-800">보기:</strong>
             ${problem.choices.map((choice, idx) => `
-              <div class="flex items-center p-2 rounded ${choice === problem.answer ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}">
-                <span class="w-6 h-6 rounded-full ${choice === problem.answer ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'} flex items-center justify-center text-sm font-medium mr-3">
+              <div class="flex items-center p-2 rounded bg-gray-50">
+                <span class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium mr-3">
                   ${idx + 1}
                 </span>
-                <span class="${choice === problem.answer ? 'text-green-700 font-medium' : 'text-gray-700'}">${choice}</span>
-                ${choice === problem.answer ? '<span class="ml-auto text-green-600">✓ 정답</span>' : ''}
+                <span class="text-gray-700">${choice}</span>
               </div>
             `).join('')}
           </div>
@@ -348,12 +355,11 @@ export default function CreateTestPaperPage() {
           <div class="space-y-2 mb-4">
             <strong class="text-gray-800">보기:</strong>
             ${problem.choices.map((choice, idx) => `
-              <div class="flex items-center p-2 rounded ${choice === problem.answer ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}">
-                <span class="w-6 h-6 rounded-full ${choice === problem.answer ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'} flex items-center justify-center text-sm font-medium mr-3">
+              <div class="flex items-center p-2 rounded bg-gray-50">
+                <span class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium mr-3">
                   ${idx + 1}
                 </span>
-                <span class="${choice === problem.answer ? 'text-green-700 font-medium' : 'text-gray-700'}">${choice}</span>
-                ${choice === problem.answer ? '<span class="ml-auto text-green-600">✓ 정답</span>' : ''}
+                <span class="text-gray-700">${choice}</span>
               </div>
             `).join('')}
           </div>
@@ -404,7 +410,7 @@ export default function CreateTestPaperPage() {
 
     // 쿼리 스트링 생성
     const queryParams = new URLSearchParams(formData).toString()
-    const url = `http://localhost:3000/api/generate-problems-stream?${queryParams}`
+    const url = `${window.location.origin}/api/generate-problems-stream?${queryParams}`
 
     // EventSource 연결
     const eventSource = new EventSource(url)
@@ -422,10 +428,22 @@ export default function CreateTestPaperPage() {
     }
 
     eventSource.onerror = function(error) {
-      console.error('SSE 연결 오류:', error)
-      addStatusMessage('error', '연결 오류가 발생했습니다.')
-      updatePreviewWithError('백엔드 서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.')
-      stopStreaming()
+      // EventSource의 readyState 확인
+      // 0 = CONNECTING, 1 = OPEN, 2 = CLOSED
+      if (eventSource.readyState === EventSource.CLOSED) {
+        // 정상 종료된 경우 (complete 후 자동 종료 등)
+        if (isGenerated || !isGenerating) {
+          console.log('SSE 연결이 정상적으로 종료되었습니다.')
+          return
+        }
+      }
+      
+      // 실제 오류인 경우만 에러 메시지 표시
+      if (isGenerating && !isGenerated) {
+        addStatusMessage('error', '연결 오류가 발생했습니다.')
+        updatePreviewWithError('백엔드 서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.')
+        stopStreaming()
+      }
     }
   }
 
@@ -595,8 +613,6 @@ export default function CreateTestPaperPage() {
                   </label>
                 </div>
 
-                
-
                 {/* 문제지 생성 버튼 */}
                 <div className="pt-2 flex gap-2">
                   <Button
@@ -633,7 +649,6 @@ export default function CreateTestPaperPage() {
 
           {/* Preview 영역 */}
           <div className="space-y-4">
-
             {/* Preview 결과 */}
             <Card className="border-none shadow-md overflow-hidden">
               <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-t-lg">

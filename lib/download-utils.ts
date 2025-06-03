@@ -40,7 +40,7 @@ export const downloadAsPDF = async (testPaperData: TestPaperData) => {
     
   } catch (error) {
     console.error('PDF 다운로드 오류:', error);
-    alert('PDF 다운로드 중 오류가 발생했습니다.');
+    throw error; // 상위에서 처리하도록 throw
   }
 };
 
@@ -70,7 +70,7 @@ export const downloadAsWord = (testPaperData: TestPaperData) => {
     
   } catch (error) {
     console.error('Word 다운로드 오류:', error);
-    alert('Word 다운로드 중 오류가 발생했습니다.');
+    throw error; // 상위에서 처리하도록 throw
   }
 };
 

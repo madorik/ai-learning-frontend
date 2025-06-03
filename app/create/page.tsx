@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { FileText, BookOpen, Wand2, Calculator, Languages, Loader2, Download, StopCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { FileText, BookOpen, Wand2, Calculator, Languages, Loader2, Download, StopCircle, AlertTriangle, Info, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import Header from "@/components/header"
 import { downloadAsPDF, downloadAsWord } from "@/lib/download-utils"
 
@@ -45,6 +54,7 @@ interface StreamData {
 }
 
 export default function CreateTestPaperPage() {
+  const router = useRouter()
   const [activeGrade, setActiveGrade] = useState("3")
   const [activeQuestionCount, setActiveQuestionCount] = useState("1")
   const [activeDifficulty, setActiveDifficulty] = useState("normal")
@@ -63,6 +73,15 @@ export default function CreateTestPaperPage() {
   const [tokenCount, setTokenCount] = useState(0)
   const [finalResult, setFinalResult] = useState<any>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+
+  // 알림 모달 상태
+  const [alertModal, setAlertModal] = useState({
+    open: false,
+    type: 'info' as 'info' | 'warning' | 'error' | 'success',
+    title: '',
+    message: '',
+    showRedirectButton: false
+  })
 
   const subjects = [
     {
@@ -95,10 +114,52 @@ export default function CreateTestPaperPage() {
 
   const questionTypes = ["교과과정", "응용 문제", "기초 개념", "실생활 응용"]
 
+  // 예쁜 알림창 표시 함수
+  const showAlert = (type: 'info' | 'warning' | 'error' | 'success', title: string, message: string, showRedirectButton = false) => {
+    setAlertModal({
+      open: true,
+      type,
+      title,
+      message,
+      showRedirectButton
+    })
+  }
+
+  // 알림창 닫기
+  const closeAlert = () => {
+    setAlertModal(prev => ({ ...prev, open: false }))
+  }
+
+  // 로그인 페이지로 이동
+  const redirectToLogin = () => {
+    closeAlert()
+    router.push('/login')
+  }
+
+  // 로그인 토큰 체크 함수
+  const checkAuthToken = (): boolean => {
+    if (typeof window === 'undefined') return false
+    
+    const token = localStorage.getItem('access_token')
+    console.log('토큰 체크:', token ? '토큰 있음' : '토큰 없음')
+    
+    if (!token) {
+      showAlert('warning', '로그인 필요', '로그인이 필요한 기능입니다. 로그인 페이지로 이동하시겠습니까?', true)
+      return false
+    }
+    
+    return true
+  }
+
   // 다운로드 함수 - 실제 구현
-  const handleDownload = (format: "pdf" | "word") => {
+  const handleDownload = async (format: "pdf" | "word") => {
     if (!isGenerated || !finalResult?.data?.problems) {
-      alert('먼저 문제지를 생성해주세요.')
+      showAlert('info', '문제지 생성 필요', '먼저 문제지를 생성해주세요.')
+      return
+    }
+
+    // 로그인 토큰 체크
+    if (!checkAuthToken()) {
       return
     }
 
@@ -119,13 +180,16 @@ export default function CreateTestPaperPage() {
       }
 
       if (format === "pdf") {
-        downloadAsPDF(testPaperData)
+        await downloadAsPDF(testPaperData)
+        showAlert('success', '다운로드 준비 완료', 'PDF 인쇄 대화상자가 열렸습니다. 인쇄 또는 PDF로 저장을 선택해주세요.')
       } else if (format === "word") {
         downloadAsWord(testPaperData)
+        showAlert('success', '다운로드 완료', 'Word 문서 다운로드가 시작되었습니다.')
       }
     } catch (error) {
       console.error('다운로드 오류:', error)
-      alert('다운로드 중 오류가 발생했습니다.')
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      showAlert('error', '다운로드 오류', `다운로드 중 오류가 발생했습니다: ${errorMessage}`)
     }
   }
 
@@ -410,8 +474,13 @@ export default function CreateTestPaperPage() {
     setPreviewContent(html)
   }
 
-  // 문제지 생성 시작 함수 - 실제 API 호출
+  // 문제지 생성 시작 함수 - 토큰 체크 추가
   const handleGenerateTestPaper = () => {
+    // 로그인 토큰 체크
+    if (!checkAuthToken()) {
+      return
+    }
+
     setIsGenerating(true)
     setGenerationProgress(0)
     setPreviewContent("")
@@ -433,6 +502,8 @@ export default function CreateTestPaperPage() {
       difficulty: difficultyValue,
       includeExplanation: includeExplanation
     }
+
+    console.log('문제지 생성 요청:', formData)
 
     // 쿼리 스트링 생성
     const queryParams = new URLSearchParams(formData).toString()
@@ -496,6 +567,34 @@ export default function CreateTestPaperPage() {
     setPreviewContent(html)
   }
 
+  // 알림 모달 아이콘 선택
+  const getAlertIcon = () => {
+    switch (alertModal.type) {
+      case 'warning':
+        return <AlertTriangle className="h-6 w-6 text-amber-500" />
+      case 'error':
+        return <AlertTriangle className="h-6 w-6 text-red-500" />
+      case 'success':
+        return <CheckCircle className="h-6 w-6 text-green-500" />
+      default:
+        return <Info className="h-6 w-6 text-blue-500" />
+    }
+  }
+
+  // 알림 모달 색상 선택
+  const getAlertColor = () => {
+    switch (alertModal.type) {
+      case 'warning':
+        return 'text-amber-700'
+      case 'error':
+        return 'text-red-700'
+      case 'success':
+        return 'text-green-700'
+      default:
+        return 'text-blue-700'
+    }
+  }
+
   // 페이지 언로드 시 연결 정리
   useEffect(() => {
     return () => {
@@ -509,6 +608,37 @@ export default function CreateTestPaperPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <Header />
+
+      {/* 알림 모달 */}
+      <Dialog open={alertModal.open} onOpenChange={closeAlert}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              {getAlertIcon()}
+              <DialogTitle className={getAlertColor()}>{alertModal.title}</DialogTitle>
+            </div>
+            <DialogDescription className="text-gray-600 leading-relaxed">
+              {alertModal.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            {alertModal.showRedirectButton ? (
+              <>
+                <Button variant="outline" onClick={closeAlert}>
+                  취소
+                </Button>
+                <Button onClick={redirectToLogin} className="bg-blue-500 hover:bg-blue-600">
+                  로그인 하러 가기
+                </Button>
+              </>
+            ) : (
+              <Button onClick={closeAlert} className="w-full">
+                확인
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="container mx-auto px-6 py-8">
         <div className="mb-8">

@@ -38,11 +38,12 @@ export default function HomePage() {
                 </span>
               </h1>
 
-              <p className="text-xl text-purple-100 leading-relaxed">초등학생을 위한 맞춤형 문제지 생성 서비스</p>
+              <p className="text-xl text-purple-100 leading-relaxed">학생들을 위한 맞춤형 문제지 생성 서비스</p>
             </div>
 
             <p className="text-lg text-purple-100 leading-relaxed">
-              인공지능이 학년별, 과목별로 최적화된 문제를 생성합니다. PDF와 Word 형식으로 다운받아 언제든 학습하세요!
+              인공지능이 학년별, 과목별로 최적화된 문제를 생성합니다. <br />
+              PDF와 Word 형식으로 다운받아 언제든 학습하세요!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Header from "@/components/header"
+import { downloadAsPDF, downloadAsWord } from "@/lib/download-utils"
 
 interface Problem {
   question: string;
@@ -94,11 +95,38 @@ export default function CreateTestPaperPage() {
 
   const questionTypes = ["교과과정", "응용 문제", "기초 개념", "실생활 응용"]
 
-  // 다운로드 함수
+  // 다운로드 함수 - 실제 구현
   const handleDownload = (format: "pdf" | "word") => {
-    if (!isGenerated) return
-    console.log(`Downloading ${format} format`)
-    // 실제 구현에서는 여기에 다운로드 API 호출이 들어갈 것입니다
+    if (!isGenerated || !finalResult?.data?.problems) {
+      alert('먼저 문제지를 생성해주세요.')
+      return
+    }
+
+    try {
+      // 과목명 변환
+      const subjectName = subjects.find(s => s.id === activeSubject)?.name || "수학"
+      const difficultyName = difficulties.find(d => d.id === activeDifficulty)?.name || "보통"
+
+      // 다운로드용 데이터 준비
+      const testPaperData = {
+        subject: subjectName,
+        grade: activeGrade,
+        difficulty: difficultyName,
+        questionCount: activeQuestionCount,
+        questionType: activeQuestionType,
+        includeExplanation: includeExplanation,
+        problems: finalResult.data.problems
+      }
+
+      if (format === "pdf") {
+        downloadAsPDF(testPaperData)
+      } else if (format === "word") {
+        downloadAsWord(testPaperData)
+      }
+    } catch (error) {
+      console.error('다운로드 오류:', error)
+      alert('다운로드 중 오류가 발생했습니다.')
+    }
   }
 
   // 상태 메시지 추가

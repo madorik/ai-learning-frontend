@@ -47,7 +47,7 @@ export default function TestPaperSettings() {
   ]
 
   const grades = ["1", "2", "3", "4", "5", "6"]
-  const questionCounts = ["5", "10", "20", "30"]
+  const questionCounts = ["1", "5", "10", "30"]
   const difficulties = [
     { id: "easy", name: "쉬움" },
     { id: "normal", name: "보통" },

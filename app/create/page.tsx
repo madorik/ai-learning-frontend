@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { FileText, BookOpen, Wand2, Calculator, Languages, Loader2, Download } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { FileText, BookOpen, Wand2, Calculator, Languages, Loader2, Download, StopCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,43 +18,81 @@ import {
 } from "@/components/ui/select"
 import Header from "@/components/header"
 
+interface Problem {
+  question: string;
+  choices: string[];
+  answer: string;
+  explanation: string;
+}
+
+interface StreamData {
+  type: string;
+  message?: string;
+  content?: string;
+  tokenCount?: number;
+  data?: {
+    problems: Problem[];
+  };
+  metadata?: {
+    model: string;
+    usage: {
+      estimatedTokens: number;
+    };
+    timestamp: string;
+  };
+  error?: string;
+}
+
 export default function CreateTestPaperPage() {
   const [activeGrade, setActiveGrade] = useState("3")
-  const [activeQuestionCount, setActiveQuestionCount] = useState("10")
+  const [activeQuestionCount, setActiveQuestionCount] = useState("1")
   const [activeDifficulty, setActiveDifficulty] = useState("normal")
   const [activeSubject, setActiveSubject] = useState("math")
+  const [activeQuestionType, setActiveQuestionType] = useState("교과과정")
   const [includeExplanation, setIncludeExplanation] = useState(false)
   const [timeLimit, setTimeLimit] = useState("15")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
   const [previewContent, setPreviewContent] = useState<string | null>(null)
   const [isGenerated, setIsGenerated] = useState(false)
+  
+  // 스트리밍 관련 상태
+  const [statusMessages, setStatusMessages] = useState<Array<{type: string, message: string, timestamp: string}>>([])
+  const [streamContent, setStreamContent] = useState("")
+  const [tokenCount, setTokenCount] = useState(0)
+  const [finalResult, setFinalResult] = useState<any>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   const subjects = [
     {
       id: "math",
       name: "수학",
       icon: <Calculator className="w-5 h-5 text-primary" />,
+      apiValue: "수학"
     },
     {
       id: "korean",
-      name: "국어",
+      name: "국어", 
       icon: <BookOpen className="w-5 h-5 text-rose-500" />,
+      apiValue: "국어"
     },
     {
       id: "english",
       name: "영어",
       icon: <Languages className="w-5 h-5 text-sky-500" />,
+      apiValue: "영어"
     },
   ]
 
   const grades = ["1", "2", "3", "4", "5", "6"]
-  const questionCounts = ["5", "10", "20", "30"]
+  const questionCounts = ["1", "2", "3", "4"]
   const difficulties = [
-    { id: "easy", name: "쉬움" },
-    { id: "normal", name: "보통" },
-    { id: "hard", name: "어려움" },
+    { id: "easy", name: "쉬움", apiValue: "쉬움" },
+    { id: "normal", name: "보통", apiValue: "보통" },
+    { id: "hard", name: "어려움", apiValue: "어려움" },
   ]
+
+  const questionTypes = ["교과과정", "응용 문제", "기초 개념", "실생활 응용"]
 
   // 다운로드 함수
   const handleDownload = (format: "pdf" | "word") => {
@@ -64,263 +101,365 @@ export default function CreateTestPaperPage() {
     // 실제 구현에서는 여기에 다운로드 API 호출이 들어갈 것입니다
   }
 
-  // 문제지 생성 시작 함수
+  // 상태 메시지 추가
+  const addStatusMessage = (type: string, message: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setStatusMessages(prev => [...prev, { type, message, timestamp }])
+  }
+
+  // 스트리밍 중단
+  const stopStreaming = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+    
+    setIsGenerating(false)
+    addStatusMessage('stop', '스트리밍이 중단되었습니다.')
+  }
+
+  // 스트림 데이터 처리
+  const handleStreamData = (data: StreamData) => {
+    switch (data.type) {
+      case 'connected':
+        addStatusMessage('connected', data.message || '연결됨')
+        break
+        
+      case 'start':
+        addStatusMessage('start', data.message || '생성 시작')
+        break
+        
+      case 'progress':
+        addStatusMessage('progress', data.message || '진행 중')
+        break
+        
+      case 'stream_start':
+        addStatusMessage('stream', data.message || '스트림 시작')
+        setStreamContent("")
+        // 빈 문제지 틀 표시
+        initializePreviewWithEmptyPaper()
+        break
+        
+      case 'chunk':
+        if (data.content) {
+          setStreamContent(prev => {
+            const newContent = prev + data.content
+            // 실시간으로 JSON 파싱 시도하여 완성된 문제들 표시
+            parseAndDisplayProblems(newContent)
+            return newContent
+          })
+        }
+        if (data.tokenCount) {
+          setTokenCount(data.tokenCount)
+        }
+        break
+        
+      case 'parsing':
+        addStatusMessage('parsing', data.message || '결과 파싱 중')
+        break
+        
+      case 'complete':
+        addStatusMessage('complete', '문제 생성이 완료되었습니다!')
+        if (data.data) {
+          setFinalResult(data)
+          displayResult(data)
+        }
+        setIsGenerating(false)
+        setIsGenerated(true)
+        break
+        
+      case 'error':
+        addStatusMessage('error', `오류: ${data.error}`)
+        updatePreviewWithError(data.error || '알 수 없는 오류가 발생했습니다.')
+        setIsGenerating(false)
+        break
+    }
+  }
+
+  // 빈 문제지 틀 초기화
+  const initializePreviewWithEmptyPaper = () => {
+    const subjectName = subjects.find(s => s.id === activeSubject)?.name || "수학"
+    const difficultyName = difficulties.find(d => d.id === activeDifficulty)?.name || "보통"
+    
+    const html = `
+      <div class="p-6">
+        <div class="border-b pb-4 mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">${activeGrade}학년 ${subjectName} 문제지</h2>
+          <div class="flex gap-4 text-sm text-gray-600">
+            <span>난이도: ${difficultyName}</span>
+            <span>문제 수: ${activeQuestionCount}개</span>
+            <span>문제 유형: ${activeQuestionType}</span>
+          </div>
+        </div>
+        
+        <div class="text-center py-8 text-gray-500">
+          <div class="animate-pulse">문제 생성 중...</div>
+        </div>
+      </div>
+    `
+    setPreviewContent(html)
+  }
+
+  // 실시간 JSON 파싱 및 문제 표시
+  const parseAndDisplayProblems = (content: string) => {
+    try {
+      // JSON 객체 찾기 시도
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return;
+      
+      const jsonStr = jsonMatch[0];
+      
+      // 부분적으로 완성된 JSON 파싱 시도
+      let parsedData;
+      try {
+        parsedData = JSON.parse(jsonStr);
+      } catch (e) {
+        // JSON이 완전하지 않으면 문제 배열까지만 파싱 시도
+        const problemsMatch = content.match(/"problems"\s*:\s*\[([\s\S]*?)\]/);
+        if (!problemsMatch) return;
+        
+        const problemsStr = problemsMatch[1];
+        const problems = [];
+        
+        // 완성된 문제 객체들 찾기
+        const problemMatches = problemsStr.match(/\{[^{}]*"question"[^{}]*"choices"[^{}]*"answer"[^{}]*"explanation"[^{}]*\}/g);
+        if (problemMatches) {
+          for (const problemStr of problemMatches) {
+            try {
+              const problem = JSON.parse(problemStr);
+              if (problem.question && problem.choices && problem.answer && problem.explanation) {
+                problems.push(problem);
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+        }
+        
+        if (problems.length > 0) {
+          displayPartialProblems(problems);
+        }
+        return;
+      }
+      
+      // 완전한 JSON이 파싱된 경우
+      if (parsedData.problems && Array.isArray(parsedData.problems)) {
+        displayPartialProblems(parsedData.problems.filter(p => 
+          p.question && p.choices && p.answer && p.explanation
+        ));
+      }
+    } catch (error) {
+      // 파싱 오류는 무시하고 계속 진행
+    }
+  }
+
+  // 부분 완성된 문제들 표시
+  const displayPartialProblems = (problems: Problem[]) => {
+    if (problems.length === 0) return;
+    
+    const subjectName = subjects.find(s => s.id === activeSubject)?.name || "수학"
+    const difficultyName = difficulties.find(d => d.id === activeDifficulty)?.name || "보통"
+
+    let html = `
+      <div class="p-6">
+        <div class="border-b pb-4 mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">${activeGrade}학년 ${subjectName} 문제지</h2>
+          <div class="flex gap-4 text-sm text-gray-600">
+            <span>난이도: ${difficultyName}</span>
+            <span>문제 수: ${activeQuestionCount}개</span>
+            <span>문제 유형: ${activeQuestionType}</span>
+          </div>
+        </div>
+    `
+
+    // 완성된 문제들 표시
+    problems.forEach((problem, index) => {
+      html += `
+        <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-white">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">📖 문제 ${index + 1}</h3>
+          <div class="text-gray-700 mb-4 leading-relaxed">${problem.question}</div>
+          
+          <div class="space-y-2 mb-4">
+            <strong class="text-gray-800">보기:</strong>
+            ${problem.choices.map((choice, idx) => `
+              <div class="flex items-center p-2 rounded ${choice === problem.answer ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}">
+                <span class="w-6 h-6 rounded-full ${choice === problem.answer ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'} flex items-center justify-center text-sm font-medium mr-3">
+                  ${idx + 1}
+                </span>
+                <span class="${choice === problem.answer ? 'text-green-700 font-medium' : 'text-gray-700'}">${choice}</span>
+                ${choice === problem.answer ? '<span class="ml-auto text-green-600">✓ 정답</span>' : ''}
+              </div>
+            `).join('')}
+          </div>
+
+          ${includeExplanation ? `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start gap-2">
+                <span class="text-blue-600 font-medium">💡 해설:</span>
+                <div class="text-blue-700 leading-relaxed">${problem.explanation}</div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `
+    })
+
+    // 아직 생성 중인 문제가 있는 경우
+    if (problems.length < parseInt(activeQuestionCount)) {
+      const remaining = parseInt(activeQuestionCount) - problems.length;
+      html += `
+        <div class="mb-8 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+          <div class="text-center py-4 text-gray-500">
+            <div class="animate-pulse">
+              <div class="w-8 h-8 bg-gray-300 rounded-full mx-auto mb-2"></div>
+              <div>남은 문제 ${remaining}개 생성 중...</div>
+            </div>
+          </div>
+        </div>
+      `
+    }
+
+    html += '</div>'
+    setPreviewContent(html)
+  }
+
+  // 결과 표시 함수 (test-streaming.html의 displayResult 참고)
+  const displayResult = (data: StreamData) => {
+    if (!data.data || !data.data.problems) {
+      setPreviewContent('<div class="p-4 text-red-600">결과 데이터가 올바르지 않습니다.</div>')
+      return
+    }
+
+    const subjectName = subjects.find(s => s.id === activeSubject)?.name || "수학"
+    const difficultyName = difficulties.find(d => d.id === activeDifficulty)?.name || "보통"
+
+    let html = `
+      <div class="p-6">
+   
+    `
+
+    // 각 문제 표시
+    data.data.problems.forEach((problem, index) => {
+      html += `
+        <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-white">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">📖 문제 ${index + 1}</h3>
+          <div class="text-gray-700 mb-4 leading-relaxed">${problem.question}</div>
+          
+          <div class="space-y-2 mb-4">
+            <strong class="text-gray-800">보기:</strong>
+            ${problem.choices.map((choice, idx) => `
+              <div class="flex items-center p-2 rounded ${choice === problem.answer ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}">
+                <span class="w-6 h-6 rounded-full ${choice === problem.answer ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'} flex items-center justify-center text-sm font-medium mr-3">
+                  ${idx + 1}
+                </span>
+                <span class="${choice === problem.answer ? 'text-green-700 font-medium' : 'text-gray-700'}">${choice}</span>
+                ${choice === problem.answer ? '<span class="ml-auto text-green-600">✓ 정답</span>' : ''}
+              </div>
+            `).join('')}
+          </div>
+
+          ${includeExplanation ? `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start gap-2">
+                <span class="text-blue-600 font-medium">💡 해설:</span>
+                <div class="text-blue-700 leading-relaxed">${problem.explanation}</div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `
+    })
+
+
+
+    html += '</div>'
+    setPreviewContent(html)
+  }
+
+  // 문제지 생성 시작 함수 - 실제 API 호출
   const handleGenerateTestPaper = () => {
     setIsGenerating(true)
     setGenerationProgress(0)
     setPreviewContent("")
     setIsGenerated(false)
+    setStatusMessages([])
+    setStreamContent("")
+    setTokenCount(0)
+    setFinalResult(null)
 
-    // 실제 구현에서는 여기에 API 호출 또는 WebSocket 연결이 들어갈 것입니다
-    // 여기서는 시뮬레이션을 위해 타이머를 사용합니다
-    const interval = setInterval(() => {
-      setGenerationProgress((prev) => {
-        const newProgress = prev + 5
+    // 폼 데이터 준비
+    const subjectValue = subjects.find(s => s.id === activeSubject)?.apiValue || "수학"
+    const difficultyValue = difficulties.find(d => d.id === activeDifficulty)?.apiValue || "보통"
+    
+    const formData = {
+      subject: subjectValue,
+      grade: activeGrade,
+      questionType: activeQuestionType,
+      questionCount: activeQuestionCount,
+      difficulty: difficultyValue,
+      includeExplanation: includeExplanation
+    }
 
-        // 진행 상황에 따라 미리보기 콘텐츠 업데이트
-        updatePreviewContent(newProgress)
+    console.log('문제지 생성 요청:', formData)
 
-        if (newProgress >= 100) {
-          clearInterval(interval)
-          setTimeout(() => {
-            setIsGenerating(false)
-            setIsGenerated(true)
-          }, 500)
-          return 100
-        }
-        return newProgress
-      })
-    }, 300)
-  }
+    // 쿼리 스트링 생성
+    const queryParams = new URLSearchParams(formData).toString()
+    const url = `http://localhost:3000/api/generate-problems-stream?${queryParams}`
 
-  // 진행 상황에 따라 미리보기 콘텐츠 업데이트
-  const updatePreviewContent = (progress: number) => {
-    const subjectName = subjects.find((s) => s.id === activeSubject)?.name || "수학"
-    const difficultyName = difficulties.find((d) => d.id === activeDifficulty)?.name || "보통"
+    // EventSource 연결
+    const eventSource = new EventSource(url)
+    eventSourceRef.current = eventSource
 
-    if (progress < 20) {
-      setPreviewContent(`
-        <div class="p-4">
-          <h2 class="text-xl font-bold mb-4">${activeGrade}학년 ${subjectName} 문제지 생성 중...</h2>
-          <p>난이도: ${difficultyName}</p>
-          <p>문제 수: ${activeQuestionCount}개</p>
-          <p class="mt-4">문제 유형 분석 중...</p>
-        </div>
-      `)
-    } else if (progress < 40) {
-      setPreviewContent(`
-        <div class="p-4">
-          <h2 class="text-xl font-bold mb-4">${activeGrade}학년 ${subjectName} 문제지</h2>
-          <p>난이도: ${difficultyName}</p>
-          <p>문제 수: ${activeQuestionCount}개</p>
-          <div class="mt-4">
-            <p class="font-semibold">문제 유형 분석 완료:</p>
-            <ul class="list-disc pl-5 mt-2">
-              <li>계산 문제: ${Math.floor(Number.parseInt(activeQuestionCount) * 0.4)}개</li>
-              <li>서술형 문제: ${Math.floor(Number.parseInt(activeQuestionCount) * 0.3)}개</li>
-              <li>그래프 해석: ${Math.floor(Number.parseInt(activeQuestionCount) * 0.3)}개</li>
-            </ul>
-            <p class="mt-4">문제 생성 중...</p>
-          </div>
-        </div>
-      `)
-    } else if (progress < 70) {
-      // 문제 일부 생성
-      const questionCount = Number.parseInt(activeQuestionCount)
-      const generatedCount = Math.floor(((progress - 40) / 30) * questionCount)
-
-      let questionsHtml = ""
-      for (let i = 1; i <= generatedCount; i++) {
-        if (activeSubject === "math") {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 수식을 계산하시오: ${Math.floor(Math.random() * 10) + 1} × ${Math.floor(Math.random() * 10) + 1} + ${Math.floor(Math.random() * 20) + 1}</p>
-              <div class="mt-2 flex gap-4">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-              </div>
-            </div>
-          `
-        } else if (activeSubject === "korean") {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 중 맞춤법이 올바른 것은?</p>
-              <div class="mt-2 flex flex-col gap-2">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">됫다 / 됐다 / 되었다</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">깨끗히 / 깨끗이 / 깨끗하게</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">가르키다 / 가리키다 / 가르치다</label>
-                </div>
-              </div>
-            </div>
-          `
-        } else {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 영어 문장의 올바른 해석은?</p>
-              <p class="italic">"The weather is nice today."</p>
-              <div class="mt-2 flex flex-col gap-2">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">오늘 날씨가 좋다.</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">어제 날씨가 좋았다.</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">내일 날씨가 좋을 것이다.</label>
-                </div>
-              </div>
-            </div>
-          `
-        }
+    eventSource.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data)
+        handleStreamData(data)
+      } catch (error) {
+        console.error('데이터 파싱 오류:', error)
+        addStatusMessage('error', '데이터 파싱 오류가 발생했습니다.')
+        updatePreviewWithError('데이터 파싱 오류가 발생했습니다.')
       }
+    }
 
-      setPreviewContent(`
-        <div class="p-4">
-          <h2 class="text-xl font-bold mb-4">${activeGrade}학년 ${subjectName} 문제지</h2>
-          <p>난이도: ${difficultyName}</p>
-          <p>문제 수: ${activeQuestionCount}개</p>
-          <p class="mt-4 mb-6">문제 생성 중... (${generatedCount}/${activeQuestionCount})</p>
-          ${questionsHtml}
-        </div>
-      `)
-    } else {
-      // 모든 문제 생성 완료
-      const questionCount = Number.parseInt(activeQuestionCount)
-
-      let questionsHtml = ""
-      for (let i = 1; i <= questionCount; i++) {
-        if (activeSubject === "math") {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 수식을 계산하시오: ${Math.floor(Math.random() * 10) + 1} × ${Math.floor(Math.random() * 10) + 1} + ${Math.floor(Math.random() * 20) + 1}</p>
-              <div class="mt-2 flex gap-4">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">${Math.floor(Math.random() * 50) + 10}</label>
-                </div>
-              </div>
-              ${
-                includeExplanation
-                  ? `
-                <div class="mt-3 pt-2 border-t">
-                  <p class="text-sm text-gray-600 font-medium">해설:</p>
-                  <p class="text-sm text-gray-600">곱셈을 먼저 계산한 후 덧셈을 합니다.</p>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-          `
-        } else if (activeSubject === "korean") {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 중 맞춤법이 올바른 것은?</p>
-              <div class="mt-2 flex flex-col gap-2">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">됫다 / 됐다 / 되었다</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">깨끗히 / 깨끗이 / 깨끗하게</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">가르키다 / 가리키다 / 가르치다</label>
-                </div>
-              </div>
-              ${
-                includeExplanation
-                  ? `
-                <div class="mt-3 pt-2 border-t">
-                  <p class="text-sm text-gray-600 font-medium">해설:</p>
-                  <p class="text-sm text-gray-600">'됐다'는 '되었다'의 준말로 맞는 표현입니다.</p>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-          `
-        } else {
-          questionsHtml += `
-            <div class="mb-6 p-3 border rounded-lg">
-              <p class="font-semibold">문제 ${i}.</p>
-              <p>다음 영어 문장의 올바른 해석은?</p>
-              <p class="italic">"The weather is nice today."</p>
-              <div class="mt-2 flex flex-col gap-2">
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_1" name="q${i}" class="mr-1">
-                  <label for="q${i}_1">오늘 날씨가 좋다.</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_2" name="q${i}" class="mr-1">
-                  <label for="q${i}_2">어제 날씨가 좋았다.</label>
-                </div>
-                <div class="flex items-center">
-                  <input type="radio" id="q${i}_3" name="q${i}" class="mr-1">
-                  <label for="q${i}_3">내일 날씨가 좋을 것이다.</label>
-                </div>
-              </div>
-              ${
-                includeExplanation
-                  ? `
-                <div class="mt-3 pt-2 border-t">
-                  <p class="text-sm text-gray-600 font-medium">해설:</p>
-                  <p class="text-sm text-gray-600">'is'는 현재시제이므로 '오늘 날씨가 좋다'가 정답입니다.</p>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-          `
-        }
-      }
-
-      setPreviewContent(`
-        <div class="p-4">
-          <h2 class="text-xl font-bold mb-4">${activeGrade}학년 ${subjectName} 문제지</h2>
-          <p>난이도: ${difficultyName}</p>
-          <p>문제 수: ${activeQuestionCount}개</p>
-          <p class="mt-4 mb-6 text-green-600 font-medium">문제 생성 완료!</p>
-          ${questionsHtml}
-        </div>
-      `)
+    eventSource.onerror = function(error) {
+      console.error('SSE 연결 오류:', error)
+      addStatusMessage('error', '연결 오류가 발생했습니다.')
+      updatePreviewWithError('백엔드 서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.')
+      stopStreaming()
     }
   }
+
+  // Preview에 오류 표시
+  const updatePreviewWithError = (error: string) => {
+    const html = `
+      <div class="p-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <span class="text-white text-sm">!</span>
+            </div>
+            <h3 class="text-lg font-semibold text-red-800">오류 발생</h3>
+          </div>
+          <p class="text-red-700 mb-4">${error}</p>
+          <div class="bg-red-100 border border-red-300 rounded p-3">
+            <p class="text-red-800 text-sm">
+              💡 잠시 후 다시 시도해주세요. 문제가 계속되면 설정을 변경해보세요.
+            </p>
+          </div>
+        </div>
+      </div>
+    `
+    setPreviewContent(html)
+  }
+
+  // 페이지 언로드 시 연결 정리
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -381,16 +520,16 @@ export default function CreateTestPaperPage() {
                 {/* 문제 유형 */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium">문제 유형</h3>
-                  <Select defaultValue="교과과정">
+                  <Select value={activeQuestionType} onValueChange={setActiveQuestionType}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="문제 유형 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         <SelectLabel>유형</SelectLabel>
-                        <SelectItem value="교과과정">교과과정</SelectItem>
-                        <SelectItem value="수행평가">수행평가</SelectItem>
-                        <SelectItem value="모의고사">모의고사</SelectItem>
+                        {questionTypes.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -416,20 +555,29 @@ export default function CreateTestPaperPage() {
                 {/* 난이도 */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium">난이도</h3>
-                  <Tabs
-                    defaultValue="normal"
-                    value={activeDifficulty}
-                    onValueChange={setActiveDifficulty}
-                    className="w-full"
-                  >
-                    <TabsList className="grid grid-cols-3 w-full">
-                      {difficulties.map((difficulty) => (
-                        <TabsTrigger key={difficulty.id} value={difficulty.id}>
-                          {difficulty.name}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </Tabs>
+                  <div className="flex gap-2">
+                    {difficulties.map((difficulty) => (
+                      <Button
+                        key={difficulty.id}
+                        variant={activeDifficulty === difficulty.id ? "default" : "outline"}
+                        className={cn(
+                          "flex-1",
+                          activeDifficulty === difficulty.id ? (
+                            difficulty.id === "easy" ? "bg-green-500 hover:bg-green-600 text-white" :
+                            difficulty.id === "normal" ? "bg-yellow-500 hover:bg-yellow-600 text-white" :
+                            "bg-red-500 hover:bg-red-600 text-white"
+                          ) : (
+                            difficulty.id === "easy" ? "text-green-600 border-green-200 hover:bg-green-50" :
+                            difficulty.id === "normal" ? "text-yellow-600 border-yellow-200 hover:bg-yellow-50" :
+                            "text-red-600 border-red-200 hover:bg-red-50"
+                          )
+                        )}
+                        onClick={() => setActiveDifficulty(difficulty.id)}
+                      >
+                        {difficulty.name}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* 해설 포함 */}
@@ -447,31 +595,19 @@ export default function CreateTestPaperPage() {
                   </label>
                 </div>
 
-                {/* 예상 풀이 시간 */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">예상 풀이 시간</h3>
-                  <div className="flex items-center">
-                    <Input
-                      type="number"
-                      value={timeLimit}
-                      onChange={(e) => setTimeLimit(e.target.value)}
-                      className="w-20 text-center"
-                    />
-                    <span className="ml-2 text-sm text-muted-foreground">분</span>
-                  </div>
-                </div>
+                
 
                 {/* 문제지 생성 버튼 */}
-                <div className="pt-2">
+                <div className="pt-2 flex gap-2">
                   <Button
-                    className="w-full gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                    className="flex-1 gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
                     onClick={handleGenerateTestPaper}
                     disabled={isGenerating}
                   >
                     {isGenerating ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        문제지 생성 중... ({generationProgress}%)
+                        생성 중...
                       </>
                     ) : (
                       <>
@@ -480,71 +616,79 @@ export default function CreateTestPaperPage() {
                       </>
                     )}
                   </Button>
+                  {isGenerating && (
+                    <Button
+                      variant="outline"
+                      onClick={stopStreaming}
+                      className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <StopCircle className="h-4 w-4" />
+                      중단
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Preview 영역 */}
-          <Card className="border-none shadow-md overflow-hidden">
-            <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-lg font-medium">Preview</CardTitle>
-                  {isGenerating && (
-                    <div className="flex items-center gap-2 ml-4">
-                      <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                      <span className="text-sm text-green-600 font-medium">{generationProgress}%</span>
+          <div className="space-y-4">
+
+            {/* Preview 결과 */}
+            <Card className="border-none shadow-md overflow-hidden">
+              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-green-600" />
+                    <CardTitle className="text-lg font-medium">Preview</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload("pdf")}
+                      disabled={!isGenerated}
+                      className="text-xs"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload("word")}
+                      disabled={!isGenerated}
+                      className="text-xs"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      WORD
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 h-[600px] overflow-auto">
+                {previewContent ? (
+                  <div className="preview-content" dangerouslySetInnerHTML={{ __html: previewContent }} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <FileText className="h-8 w-8 text-gray-400" />
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload("pdf")}
-                    disabled={!isGenerated}
-                    className="text-xs"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    PDF
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload("word")}
-                    disabled={!isGenerated}
-                    className="text-xs"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    WORD
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0 h-[600px] overflow-auto">
-              {previewContent ? (
-                <div className="preview-content" dangerouslySetInnerHTML={{ __html: previewContent }} />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <FileText className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">미리보기 영역</h3>
-                  <p className="text-gray-500 max-w-md mb-4">
-                    왼쪽에서 원하는 설정을 선택한 후 '문제지 생성' 버튼을 클릭하면 AI가 실시간으로 문제를 생성하는
-                    과정이 여기에 표시됩니다.
-                  </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md">
-                    <p className="text-sm text-blue-700">
-                      💡 문제지 생성 완료 후 PDF 또는 WORD 형식으로 다운로드할 수 있습니다.
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">미리보기 영역</h3>
+                    <p className="text-gray-500 max-w-md mb-4">
+                      왼쪽에서 원하는 설정을 선택한 후 '문제지 생성' 버튼을 클릭하면 AI가 실시간으로 문제를 생성하는
+                      과정이 여기에 표시됩니다.
                     </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md">
+                      <p className="text-sm text-blue-700">
+                        💡 문제지 생성 완료 후 PDF 또는 WORD 형식으로 다운로드할 수 있습니다.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
